@@ -18,7 +18,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 
 const STORAGE_KEY = '@photo-memory/items';
 const PHOTO_DIR = FileSystem.documentDirectory
@@ -115,16 +114,14 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-function mapRegion(location) {
-  return {
-    latitude: location.latitude,
-    longitude: location.longitude,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  };
-}
-
 function IconButton({ icon, label, onPress, variant = 'primary', disabled }) {
+  const variantButtonStyle =
+    variant === 'danger'
+      ? styles.dangerButton
+      : variant === 'ghost'
+        ? styles.ghostButton
+        : styles.primaryButton;
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -133,7 +130,7 @@ function IconButton({ icon, label, onPress, variant = 'primary', disabled }) {
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        styles[`${variant}Button`],
+        variantButtonStyle,
         disabled && styles.disabledButton,
         pressed && !disabled && styles.pressedButton,
       ]}
@@ -317,14 +314,18 @@ export default function App() {
               </View>
             </View>
 
-            <View style={styles.mapWrap}>
-              <MapView
-                key={selectedPhoto.id}
-                style={styles.map}
-                initialRegion={mapRegion(selectedPhoto.location)}
-              >
-                <Marker coordinate={selectedPhoto.location} title="Vị trí chụp ảnh" />
-              </MapView>
+            <View style={styles.mapPreview}>
+              <View style={styles.mapGrid}>
+                <View style={[styles.gridLine, styles.gridLineVertical]} />
+                <View style={[styles.gridLine, styles.gridLineHorizontal]} />
+              </View>
+              <View style={styles.mapPin}>
+                <Ionicons name="location" size={28} color="#c62828" />
+              </View>
+              <Text style={styles.mapPreviewText}>Vị trí chụp ảnh</Text>
+              <Text style={styles.mapPreviewCoords}>
+                {selectedPhoto.location.latitude.toFixed(5)}, {selectedPhoto.location.longitude.toFixed(5)}
+              </Text>
             </View>
 
             <View style={styles.actions}>
@@ -504,13 +505,53 @@ const styles = StyleSheet.create({
     color: '#455a64',
     fontSize: 13,
   },
-  mapWrap: {
+  mapPreview: {
+    alignItems: 'center',
+    backgroundColor: '#e8f1f6',
+    borderTopColor: '#d7dee5',
+    borderTopWidth: 1,
     height: 210,
+    justifyContent: 'center',
     overflow: 'hidden',
   },
-  map: {
+  mapGrid: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.65,
+  },
+  gridLine: {
+    backgroundColor: '#b9ccd8',
+    position: 'absolute',
+  },
+  gridLineVertical: {
     height: '100%',
+    left: '50%',
+    width: 1,
+  },
+  gridLineHorizontal: {
+    height: 1,
+    top: '50%',
     width: '100%',
+  },
+  mapPin: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderColor: '#cfd8dc',
+    borderRadius: 28,
+    borderWidth: 1,
+    height: 56,
+    justifyContent: 'center',
+    marginBottom: 10,
+    width: 56,
+  },
+  mapPreviewText: {
+    color: '#263238',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  mapPreviewCoords: {
+    color: '#607d8b',
+    fontSize: 13,
+    marginTop: 4,
   },
   actions: {
     flexDirection: 'row',
