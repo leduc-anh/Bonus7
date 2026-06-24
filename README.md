@@ -9,7 +9,8 @@ description with Gemini 2.5 Flash, and reopening saved photo history later.
 - Store photo metadata with `@react-native-async-storage/async-storage`.
 - Copy captured image files into app document storage with `expo-file-system`.
 - Save the device location at capture time with `expo-location`.
-- Show a location preview for the selected photo and open it in Google Maps.
+- Show the selected photo location on an in-app `react-native-maps` map.
+- Show a Google Maps URL generated from the saved coordinates.
 - Open the capture point in Google Maps.
 - Generate a short Vietnamese image description using Gemini 2.5 Flash.
 - Delete saved photos and their local files.

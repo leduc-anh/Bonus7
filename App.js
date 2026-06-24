@@ -16,8 +16,27 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  UIManager,
   View,
 } from 'react-native';
+
+if (UIManager && typeof UIManager.hasViewManagerConfig !== 'function') {
+  const hasViewManagerConfig = (name) =>
+    Boolean(UIManager.getViewManagerConfig?.(name));
+
+  try {
+    Object.defineProperty(UIManager, 'hasViewManagerConfig', {
+      configurable: true,
+      value: hasViewManagerConfig,
+    });
+  } catch {
+    UIManager.hasViewManagerConfig = hasViewManagerConfig;
+  }
+}
+
+const Maps = require('react-native-maps');
+const MapView = Maps.default || Maps;
+const { Marker } = Maps;
 
 const STORAGE_KEY = '@photo-memory/items';
 const PHOTO_DIR = FileSystem.documentDirectory
@@ -112,6 +131,20 @@ function formatDate(value) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+function getMapRegion(location) {
+  return {
+    latitude: location.latitude,
+    longitude: location.longitude,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  };
+}
+
+function getGoogleMapsUrl(location) {
+  const { latitude, longitude } = location;
+  return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
 }
 
 function IconButton({ icon, label, onPress, variant = 'primary', disabled }) {
@@ -265,9 +298,7 @@ export default function App() {
   }
 
   function openGoogleMaps(photo) {
-    const { latitude, longitude } = photo.location;
-    const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-    Linking.openURL(url);
+    Linking.openURL(getGoogleMapsUrl(photo.location));
   }
 
   return (
@@ -314,19 +345,30 @@ export default function App() {
               </View>
             </View>
 
-            <View style={styles.mapPreview}>
-              <View style={styles.mapGrid}>
-                <View style={[styles.gridLine, styles.gridLineVertical]} />
-                <View style={[styles.gridLine, styles.gridLineHorizontal]} />
-              </View>
-              <View style={styles.mapPin}>
-                <Ionicons name="location" size={28} color="#c62828" />
-              </View>
-              <Text style={styles.mapPreviewText}>Vị trí chụp ảnh</Text>
-              <Text style={styles.mapPreviewCoords}>
-                {selectedPhoto.location.latitude.toFixed(5)}, {selectedPhoto.location.longitude.toFixed(5)}
-              </Text>
+            <View style={styles.mapWrap}>
+              <MapView
+                key={selectedPhoto.id}
+                style={styles.map}
+                initialRegion={getMapRegion(selectedPhoto.location)}
+              >
+                <Marker
+                  coordinate={selectedPhoto.location}
+                  title="Vị trí chụp ảnh"
+                  description={getGoogleMapsUrl(selectedPhoto.location)}
+                />
+              </MapView>
             </View>
+
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => openGoogleMaps(selectedPhoto)}
+              style={styles.mapUrlBox}
+            >
+              <Ionicons name="link" size={16} color="#1565c0" />
+              <Text selectable style={styles.mapUrlText}>
+                {getGoogleMapsUrl(selectedPhoto.location)}
+              </Text>
+            </Pressable>
 
             <View style={styles.actions}>
               <IconButton
@@ -505,53 +547,34 @@ const styles = StyleSheet.create({
     color: '#455a64',
     fontSize: 13,
   },
-  mapPreview: {
+  mapWrap: {
     alignItems: 'center',
     backgroundColor: '#e8f1f6',
     borderTopColor: '#d7dee5',
     borderTopWidth: 1,
-    height: 210,
+    height: 240,
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  mapGrid: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.65,
-  },
-  gridLine: {
-    backgroundColor: '#b9ccd8',
-    position: 'absolute',
-  },
-  gridLineVertical: {
+  map: {
     height: '100%',
-    left: '50%',
-    width: 1,
-  },
-  gridLineHorizontal: {
-    height: 1,
-    top: '50%',
     width: '100%',
   },
-  mapPin: {
+  mapUrlBox: {
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderColor: '#cfd8dc',
-    borderRadius: 28,
-    borderWidth: 1,
-    height: 56,
-    justifyContent: 'center',
-    marginBottom: 10,
-    width: 56,
+    backgroundColor: '#eef6fc',
+    borderTopColor: '#d7dee5',
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  mapPreviewText: {
-    color: '#263238',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  mapPreviewCoords: {
-    color: '#607d8b',
+  mapUrlText: {
+    color: '#1565c0',
+    flex: 1,
     fontSize: 13,
-    marginTop: 4,
+    lineHeight: 18,
   },
   actions: {
     flexDirection: 'row',
